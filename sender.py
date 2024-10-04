@@ -8,7 +8,6 @@ class Sender:
     seq = 0  # Initial sequence number
 
     def __init__(self):
-        print("[Sender] Initialized")
         self.packets = self.generate_packets()
         self.send_packets(self.packets)
 
@@ -28,10 +27,37 @@ class Sender:
     def send_packet(self, packet):
         """Handles sending a single packet, waiting for ACK or retransmission."""
         while True:
+            start_time = time.time()  # Start the timer
+            print(f"[Sender][Stop-and-Wait] Sending: Packet(seq={packet.seq_num}, data={packet.data})")
+
+            # Simulate packet loss with a delay if loss_prob is odd
+            if packet.loss_prob > 60:  # Check if loss_prob is odd
+                print(f"[Network] Packet loss. Retransmitting: Packet(seq={packet.seq_num}, data={packet.data})")
+                if packet.loss_prob % 2 == 1:
+                    time.sleep(3)  # Add a 4-second delay to simulate packet loss
+                
+            else:
+                ack = None
+                while time.time() - start_time < self.timeout:
+                    ack = self.receiver.acknowledge(packet)
+
+                    if ack.code == "ACK":
+                        print(f"[Sender] Received ACK: ACK({ack.code}). Moving to the next packet.)")
+                        return  # Exit the loop and move to the next packet
+                    elif ack.code == "NACK":
+                        print(f"[Sender] Received NACK. Retransmitting: Packet(seq={packet.seq_num})")
+                        break  # Break and retransmit the packet
+
+            # If no ACK received within timeout, retransmit the packet
+            if time.time() - start_time >= self.timeout:
+                print(f"[Sender][Stop-and-Wait] Timeout waiting for ACK. Retransmitting: Packet(seq={packet.seq_num}, data={packet.data})")
+                packet.reset_probabilities()  # Reset loss/corruption probabilities
+                continue  # Continue the loop to retransmit the packet
+            
             print(f"[Sender][Stop-and-Wait] Sending: Packet(seq={packet.seq_num}, data={packet.data})")
             ack = self.receiver.acknowledge(packet)
-            if ack == "ACK":
-                print(f"[Sender] Received ACK: {ack} for Packet(seq={packet.seq_num})")
+            if ack.code == "ACK":
+                print(f"[Sender] Received ACK: ACK({ack.seq_num}). Moving to next packet.")
                 break
             else:
                 print(f"[Sender] Received NACK or no ACK. Retransmitting: Packet(seq={packet.seq_num})")
@@ -40,3 +66,5 @@ class Sender:
 
 if __name__ == "__main__":
     sender = Sender()
+
+
