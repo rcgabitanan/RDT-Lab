@@ -33,8 +33,7 @@ class Sender:
             # Simulate packet loss with a delay if loss_prob is odd
             if packet.loss_prob > 60:  # Check if loss_prob is odd
                 print(f"[Network] Packet loss. Retransmitting: Packet(seq={packet.seq_num}, data={packet.data})")
-                if packet.loss_prob % 2 == 1:
-                    time.sleep(3)  # Add a 4-second delay to simulate packet loss
+                time.sleep(3)  # Add a 3-second delay to simulate packet loss
                 
             else:
                 ack = None
